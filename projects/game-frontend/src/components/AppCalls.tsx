@@ -25,49 +25,6 @@ const AppCalls = ({ openModal, setModalState }: AppCallsInterface) => {
   })
   algorand.setDefaultSigner(signer)
 
-  const sendAppCall = async () => {
-    setLoading(true)
-
-    // Please note, in typical production scenarios,
-    // you wouldn't want to use deploy directly from your frontend.
-    // Instead, you would deploy your contract on your backend and reference it by id.
-    // Given the simplicity of the starter contract, we are deploying it on the frontend
-    // for demonstration purposes.
-    const factory = new GameFactory({
-      defaultSender: activeAddress,
-      algorand,
-    })
-    const deployResult = await factory
-      .deploy({
-        onSchemaBreak: OnSchemaBreak.AppendApp,
-        onUpdate: OnUpdate.AppendApp,
-      })
-      .catch((e: Error) => {
-        enqueueSnackbar(`Error deploying the contract: ${e.message}`, { variant: 'error' })
-        setLoading(false)
-        return undefined
-      })
-
-    if (!deployResult) {
-      return
-    }
-
-    const { appClient } = deployResult
-
-    const response = await appClient.send.hello({ args: { name: contractInput } }).catch((e: Error) => {
-      enqueueSnackbar(`Error calling the contract: ${e.message}`, { variant: 'error' })
-      setLoading(false)
-      return undefined
-    })
-
-    if (!response) {
-      return
-    }
-
-    enqueueSnackbar(`Response from the contract: ${response.return}`, { variant: 'success' })
-    setLoading(false)
-  }
-
   return (
     <dialog id="appcalls_modal" className={`modal ${openModal ? 'modal-open' : ''} bg-slate-200`}>
       <form method="dialog" className="modal-box">
@@ -85,9 +42,6 @@ const AppCalls = ({ openModal, setModalState }: AppCallsInterface) => {
         <div className="modal-action ">
           <button className="btn" onClick={() => setModalState(!openModal)}>
             Close
-          </button>
-          <button className={`btn`} onClick={sendAppCall}>
-            {loading ? <span className="loading loading-spinner" /> : 'Send application call'}
           </button>
         </div>
       </form>
