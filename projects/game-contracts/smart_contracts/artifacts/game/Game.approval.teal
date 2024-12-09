@@ -1,0 +1,599 @@
+#pragma version 10
+
+smart_contracts.game.contract.Game.approval_program:
+    intcblock 1 0 8 400
+    bytecblock "user" "asset" 0x151f7c75 "user_asset"
+    callsub __puya_arc4_router__
+    return
+
+
+// smart_contracts.game.contract.Game.__puya_arc4_router__() -> uint64:
+__puya_arc4_router__:
+    // smart_contracts/game/contract.py:32
+    // class Game(ARC4Contract):
+    proto 0 1
+    txn NumAppArgs
+    bz __puya_arc4_router___bare_routing@9
+    pushbytess 0x1431f856 0xec476dbd 0x828f30d3 0x69f5c863 0xe61837dc // method "register(string)(uint64,string,uint64)", method "fund_account(pay)uint64", method "buy_asset(byte[],uint64)void", method "admin_upsert_asset((string,string,uint64))void", method "sellback_asset(byte[],uint64)void"
+    txna ApplicationArgs 0
+    match __puya_arc4_router___register_route@2 __puya_arc4_router___fund_account_route@3 __puya_arc4_router___buy_asset_route@4 __puya_arc4_router___admin_upsert_asset_route@5 __puya_arc4_router___sellback_asset_route@6
+    intc_1 // 0
+    retsub
+
+__puya_arc4_router___register_route@2:
+    // smart_contracts/game/contract.py:38
+    // @arc4.abimethod
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/game/contract.py:32
+    // class Game(ARC4Contract):
+    txna ApplicationArgs 1
+    // smart_contracts/game/contract.py:38
+    // @arc4.abimethod
+    callsub register
+    bytec_2 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    retsub
+
+__puya_arc4_router___fund_account_route@3:
+    // smart_contracts/game/contract.py:56
+    // @arc4.abimethod
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/game/contract.py:32
+    // class Game(ARC4Contract):
+    txn GroupIndex
+    intc_0 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_0 // pay
+    ==
+    assert // transaction type is pay
+    // smart_contracts/game/contract.py:56
+    // @arc4.abimethod
+    callsub fund_account
+    bytec_2 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    retsub
+
+__puya_arc4_router___buy_asset_route@4:
+    // smart_contracts/game/contract.py:76
+    // @arc4.abimethod
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/game/contract.py:32
+    // class Game(ARC4Contract):
+    txna ApplicationArgs 1
+    extract 2 0
+    txna ApplicationArgs 2
+    btoi
+    // smart_contracts/game/contract.py:76
+    // @arc4.abimethod
+    callsub buy_asset
+    intc_0 // 1
+    retsub
+
+__puya_arc4_router___admin_upsert_asset_route@5:
+    // smart_contracts/game/contract.py:107
+    // @arc4.abimethod
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/game/contract.py:32
+    // class Game(ARC4Contract):
+    txna ApplicationArgs 1
+    // smart_contracts/game/contract.py:107
+    // @arc4.abimethod
+    callsub admin_upsert_asset
+    intc_0 // 1
+    retsub
+
+__puya_arc4_router___sellback_asset_route@6:
+    // smart_contracts/game/contract.py:119
+    // @arc4.abimethod
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/game/contract.py:32
+    // class Game(ARC4Contract):
+    txna ApplicationArgs 1
+    extract 2 0
+    txna ApplicationArgs 2
+    btoi
+    // smart_contracts/game/contract.py:119
+    // @arc4.abimethod
+    callsub sellback_asset
+    intc_0 // 1
+    retsub
+
+__puya_arc4_router___bare_routing@9:
+    // smart_contracts/game/contract.py:32
+    // class Game(ARC4Contract):
+    txn OnCompletion
+    bnz __puya_arc4_router___after_if_else@13
+    txn ApplicationID
+    !
+    assert // can only call when creating
+    intc_0 // 1
+    retsub
+
+__puya_arc4_router___after_if_else@13:
+    // smart_contracts/game/contract.py:32
+    // class Game(ARC4Contract):
+    intc_1 // 0
+    retsub
+
+
+// smart_contracts.game.contract.Game.register(name: bytes) -> bytes:
+register:
+    // smart_contracts/game/contract.py:38-39
+    // @arc4.abimethod
+    // def register(self, name: arc4.String) -> User:
+    proto 1 1
+    // smart_contracts/game/contract.py:48
+    // if Txn.sender not in self.user:
+    bytec_0 // "user"
+    txn Sender
+    concat
+    box_len
+    bury 1
+    bnz register_after_if_else@2
+    // smart_contracts/game/contract.py:50
+    // registered_at=arc4.UInt64(Global.latest_timestamp),
+    global LatestTimestamp
+    itob
+    // smart_contracts/game/contract.py:49-53
+    // self.user[Txn.sender] = User(
+    //     registered_at=arc4.UInt64(Global.latest_timestamp),
+    //     name=name,
+    //     balance=arc4.UInt64(0),
+    // )
+    pushbytes 0x0012
+    concat
+    // smart_contracts/game/contract.py:52
+    // balance=arc4.UInt64(0),
+    pushbytes 0x0000000000000000
+    // smart_contracts/game/contract.py:49-53
+    // self.user[Txn.sender] = User(
+    //     registered_at=arc4.UInt64(Global.latest_timestamp),
+    //     name=name,
+    //     balance=arc4.UInt64(0),
+    // )
+    concat
+    frame_dig -1
+    concat
+    // smart_contracts/game/contract.py:49
+    // self.user[Txn.sender] = User(
+    bytec_0 // "user"
+    txn Sender
+    concat
+    // smart_contracts/game/contract.py:49-53
+    // self.user[Txn.sender] = User(
+    //     registered_at=arc4.UInt64(Global.latest_timestamp),
+    //     name=name,
+    //     balance=arc4.UInt64(0),
+    // )
+    dup
+    box_del
+    pop
+    swap
+    box_put
+
+register_after_if_else@2:
+    // smart_contracts/game/contract.py:54
+    // return self.user[Txn.sender]
+    bytec_0 // "user"
+    txn Sender
+    concat
+    box_get
+    assert // check self.user entry exists
+    retsub
+
+
+// smart_contracts.game.contract.Game.fund_account(payment: uint64) -> bytes:
+fund_account:
+    // smart_contracts/game/contract.py:56-57
+    // @arc4.abimethod
+    // def fund_account(self, payment: gtxn.PaymentTransaction) -> arc4.UInt64:
+    proto 1 1
+    // smart_contracts/game/contract.py:67
+    // payment.receiver == Global.current_application_address
+    frame_dig -1
+    gtxns Receiver
+    global CurrentApplicationAddress
+    ==
+    // smart_contracts/game/contract.py:66-68
+    // assert (
+    //     payment.receiver == Global.current_application_address
+    // ), "Payment receiver must be the application address"
+    assert // Payment receiver must be the application address
+    // smart_contracts/game/contract.py:69
+    // assert payment.sender in self.user, "User must be registered"
+    frame_dig -1
+    gtxns Sender
+    bytec_0 // "user"
+    swap
+    concat
+    dup
+    box_len
+    bury 1
+    assert // User must be registered
+    // smart_contracts/game/contract.py:72
+    // self.user[payment.sender].balance.native + payment.amount
+    dup
+    box_get
+    assert // check self.user entry exists
+    extract 10 8 // on error: Index access is out of bounds
+    btoi
+    frame_dig -1
+    gtxns Amount
+    +
+    // smart_contracts/game/contract.py:71-73
+    // self.user[payment.sender].balance = arc4.UInt64(
+    //     self.user[payment.sender].balance.native + payment.amount
+    // )
+    itob
+    // smart_contracts/game/contract.py:71
+    // self.user[payment.sender].balance = arc4.UInt64(
+    dig 1
+    box_get
+    assert // check self.user entry exists
+    // smart_contracts/game/contract.py:71-73
+    // self.user[payment.sender].balance = arc4.UInt64(
+    //     self.user[payment.sender].balance.native + payment.amount
+    // )
+    swap
+    replace2 10
+    dig 1
+    box_del
+    pop
+    dig 1
+    swap
+    box_put
+    // smart_contracts/game/contract.py:74
+    // return self.user[payment.sender].balance
+    box_get
+    assert // check self.user entry exists
+    extract 10 8 // on error: Index access is out of bounds
+    retsub
+
+
+// smart_contracts.game.contract.Game.buy_asset(asset_id: bytes, quantity: uint64) -> void:
+buy_asset:
+    // smart_contracts/game/contract.py:76-77
+    // @arc4.abimethod
+    // def buy_asset(self, asset_id: Hash, quantity: Quantity) -> None:
+    proto 2 0
+    // smart_contracts/game/contract.py:84
+    // assert Txn.sender in self.user, "User must be registered"
+    bytec_0 // "user"
+    txn Sender
+    concat
+    box_len
+    bury 1
+    assert // User must be registered
+    // smart_contracts/game/contract.py:85
+    // assert asset_id in self.asset, "Invalid asset ID"
+    bytec_1 // "asset"
+    frame_dig -2
+    concat
+    dup
+    box_len
+    bury 1
+    assert // Invalid asset ID
+    // smart_contracts/game/contract.py:87
+    // user_balance = self.user[Txn.sender].balance.native
+    bytec_0 // "user"
+    txn Sender
+    concat
+    box_get
+    assert // check self.user entry exists
+    extract 10 8 // on error: Index access is out of bounds
+    btoi
+    // smart_contracts/game/contract.py:88
+    // asset_price = self.asset[asset_id].price.native
+    dig 1
+    box_get
+    assert // check self.asset entry exists
+    extract 4 8 // on error: Index access is out of bounds
+    btoi
+    // smart_contracts/game/contract.py:90
+    // a = 8 + self.asset[asset_id].bytes.length
+    uncover 2
+    box_len
+    assert // check self.asset entry exists
+    intc_2 // 8
+    +
+    // smart_contracts/game/contract.py:91
+    // mbr_per_unit = 2_500 + (400 * (a))
+    intc_3 // 400
+    *
+    pushint 2500 // 2500
+    +
+    // smart_contracts/game/contract.py:94
+    // total := asset_price * quantity + mbr_per_unit * quantity
+    swap
+    frame_dig -1
+    *
+    swap
+    frame_dig -1
+    *
+    +
+    // smart_contracts/game/contract.py:93-94
+    // assert user_balance >= (
+    //     total := asset_price * quantity + mbr_per_unit * quantity
+    dup2
+    >=
+    // smart_contracts/game/contract.py:93-95
+    // assert user_balance >= (
+    //     total := asset_price * quantity + mbr_per_unit * quantity
+    // ), "Insufficient funds"
+    assert // Insufficient funds
+    // smart_contracts/game/contract.py:97-98
+    // # Update user balance
+    // self.user[Txn.sender].balance = arc4.UInt64(user_balance - total)
+    -
+    itob
+    bytec_0 // "user"
+    txn Sender
+    concat
+    dup
+    box_get
+    assert // check self.user entry exists
+    uncover 2
+    replace2 10
+    dig 1
+    box_del
+    pop
+    box_put
+    // smart_contracts/game/contract.py:100-101
+    // # Insert or update user-asset box
+    // user_asset_id = op.sha256(Txn.sender.bytes + asset_id)
+    txn Sender
+    frame_dig -2
+    concat
+    sha256
+    // smart_contracts/game/contract.py:102
+    // if user_asset_id in self.user_asset:
+    bytec_3 // "user_asset"
+    swap
+    concat
+    dup
+    box_len
+    bury 1
+    bz buy_asset_else_body@2
+    // smart_contracts/game/contract.py:103
+    // self.user_asset[user_asset_id] += quantity
+    dup
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.user_asset entry exists
+    frame_dig -1
+    +
+    itob
+    box_put
+    b buy_asset_after_if_else@3
+
+buy_asset_else_body@2:
+    // smart_contracts/game/contract.py:105
+    // self.user_asset[user_asset_id] = quantity
+    frame_dig -1
+    itob
+    box_put
+
+buy_asset_after_if_else@3:
+    retsub
+
+
+// smart_contracts.game.contract.Game.admin_upsert_asset(asset: bytes) -> void:
+admin_upsert_asset:
+    // smart_contracts/game/contract.py:107-108
+    // @arc4.abimethod
+    // def admin_upsert_asset(self, asset: GameAsset) -> None:
+    proto 1 0
+    // smart_contracts/game/contract.py:115
+    // Txn.sender == Global.creator_address
+    txn Sender
+    global CreatorAddress
+    ==
+    // smart_contracts/game/contract.py:114-116
+    // assert (
+    //     Txn.sender == Global.creator_address
+    // ), "Only the creator can call this method"
+    assert // Only the creator can call this method
+    // smart_contracts/game/contract.py:117
+    // self.asset[op.sha256(asset.name.bytes)] = asset.copy()
+    frame_dig -1
+    intc_1 // 0
+    extract_uint16
+    frame_dig -1
+    pushint 2 // 2
+    extract_uint16
+    frame_dig -1
+    cover 2
+    substring3
+    sha256
+    bytec_1 // "asset"
+    swap
+    concat
+    dup
+    box_del
+    pop
+    frame_dig -1
+    box_put
+    retsub
+
+
+// smart_contracts.game.contract.Game.sellback_asset(asset_id: bytes, quantity: uint64) -> void:
+sellback_asset:
+    // smart_contracts/game/contract.py:119-120
+    // @arc4.abimethod
+    // def sellback_asset(self, asset_id: Hash, quantity: Quantity) -> None:
+    proto 2 0
+    // smart_contracts/game/contract.py:127
+    // assert Txn.sender in self.user, "User must be registered"
+    bytec_0 // "user"
+    txn Sender
+    concat
+    box_len
+    bury 1
+    assert // User must be registered
+    // smart_contracts/game/contract.py:128
+    // assert asset_id in self.asset, "Invalid asset ID"
+    bytec_1 // "asset"
+    frame_dig -2
+    concat
+    dup
+    box_len
+    bury 1
+    assert // Invalid asset ID
+    // smart_contracts/game/contract.py:130
+    // user_balance = self.user[Txn.sender].balance.native
+    bytec_0 // "user"
+    txn Sender
+    concat
+    box_get
+    assert // check self.user entry exists
+    extract 10 8 // on error: Index access is out of bounds
+    btoi
+    swap
+    // smart_contracts/game/contract.py:131
+    // asset_price = self.asset[asset_id].price.native
+    dup
+    box_get
+    assert // check self.asset entry exists
+    extract 4 8 // on error: Index access is out of bounds
+    btoi
+    swap
+    // smart_contracts/game/contract.py:133
+    // a = (8 + self.asset[asset_id].bytes.length) * quantity
+    box_len
+    assert // check self.asset entry exists
+    intc_2 // 8
+    +
+    frame_dig -1
+    *
+    // smart_contracts/game/contract.py:134
+    // mbr = 2_500 + (400 * (a))
+    intc_3 // 400
+    *
+    pushint 2500 // 2500
+    +
+    // smart_contracts/game/contract.py:136
+    // user_asset_id = op.sha256(Txn.sender.bytes + asset_id)
+    txn Sender
+    frame_dig -2
+    concat
+    sha256
+    // smart_contracts/game/contract.py:137
+    // assert user_asset_id in self.user_asset, "No assets found"
+    bytec_3 // "user_asset"
+    swap
+    concat
+    dupn 2
+    box_len
+    bury 1
+    assert // No assets found
+    // smart_contracts/game/contract.py:139
+    // self.user_asset[user_asset_id] >= quantity
+    dup
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.user_asset entry exists
+    frame_dig -1
+    >=
+    // smart_contracts/game/contract.py:138-140
+    // assert (
+    //     self.user_asset[user_asset_id] >= quantity
+    // ), "Insufficient amount of assets"
+    assert // Insufficient amount of assets
+    // smart_contracts/game/contract.py:142-143
+    // # update or remove user-asset box
+    // self.user_asset[user_asset_id] -= quantity
+    dup
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.user_asset entry exists
+    frame_dig -1
+    -
+    itob
+    dig 1
+    swap
+    box_put
+    // smart_contracts/game/contract.py:144
+    // if self.user_asset[user_asset_id] == 0:
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.user_asset entry exists
+    bnz sellback_asset_after_if_else@2
+    // smart_contracts/game/contract.py:145
+    // del self.user_asset[user_asset_id]
+    frame_dig 3
+    box_del
+    pop
+
+sellback_asset_after_if_else@2:
+    // smart_contracts/game/contract.py:149
+    // user_balance + (asset_price * quantity) + mbr
+    frame_dig 1
+    frame_dig -1
+    *
+    frame_dig 0
+    +
+    frame_dig 2
+    +
+    // smart_contracts/game/contract.py:147-150
+    // # Update user balance
+    // self.user[Txn.sender].balance = arc4.UInt64(
+    //     user_balance + (asset_price * quantity) + mbr
+    // )
+    itob
+    // smart_contracts/game/contract.py:147-148
+    // # Update user balance
+    // self.user[Txn.sender].balance = arc4.UInt64(
+    bytec_0 // "user"
+    txn Sender
+    concat
+    dup
+    box_get
+    assert // check self.user entry exists
+    // smart_contracts/game/contract.py:147-150
+    // # Update user balance
+    // self.user[Txn.sender].balance = arc4.UInt64(
+    //     user_balance + (asset_price * quantity) + mbr
+    // )
+    uncover 2
+    replace2 10
+    dig 1
+    box_del
+    pop
+    box_put
+    retsub

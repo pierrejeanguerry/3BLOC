@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.vscode/**'
+      - '.idea/**'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  game-contracts-validate:
+    name: Run game-contracts release
+    secrets: inherit
+    uses: ./.github/workflows/game-contracts-ci.yaml
+
+  game-contracts-release:
+    name: Run game-contracts release
+    secrets: inherit
+    uses: ./.github/workflows/game-contracts-cd.yaml
+    needs: game-contracts-validate
+
+  game-frontend-validate:
+    name: Run game-frontend release
+    secrets: inherit
+    uses: ./.github/workflows/game-frontend-ci.yaml
+
+  game-frontend-release:
+    name: Run game-frontend release
+    secrets: inherit
+    uses: ./.github/workflows/game-frontend-cd.yaml
+    needs: game-frontend-validate

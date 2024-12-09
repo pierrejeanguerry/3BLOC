@@ -1,0 +1,14 @@
+name: Pull Request validation
+
+on: [pull_request]
+
+
+jobs:
+  game-contracts-ci:
+    name: Run game-contracts validation
+    uses: ./.github/workflows/game-contracts-ci.yaml
+
+  game-frontend-ci:
+    name: Run game-frontend validation
+    uses: ./.github/workflows/game-frontend-ci.yaml
+
