@@ -204,7 +204,7 @@ def test_buy_asset(
     # Calculate mbr for one unit of asset
     asset_bytes_length = len(box(asset_box_name)) + len(asset_id)
     # Assume asset bytes length is based on asset name length
-    mbr_per_unit = 2_500 + (400 * (8 + asset_bytes_length))
+    mbr_per_unit = 2_500 + (400 * (asset_bytes_length))
 
     # Construct payment transaction to fund the user's game account
     ptxn = PaymentTxn(
@@ -297,7 +297,7 @@ def test_sellback_asset(
     # Calculate mbr for one unit of asset
     asset_bytes_length = len(box(asset_box_name)) + len(asset_id)
     # Assume asset bytes length is based on asset name length
-    mbr_per_unit = 2_500 + (400 * (8 + asset_bytes_length))
+    mbr_per_unit = 2_500 + (400 * (asset_bytes_length))
 
     # Finance le compte de l'utilisateur pour l'achat de l'asset
     ptxn = PaymentTxn(

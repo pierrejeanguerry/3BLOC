@@ -89,7 +89,7 @@ class Game(ARC4Contract):
         asset_price = self.asset[asset_id].price.native
 
         asset_bytes_length = self.asset[asset_id].bytes.length + asset_id.length
-        mbr_per_unit = 2_500 + (400 * (8 + asset_bytes_length))
+        mbr_per_unit = 2_500 + (400 * (asset_bytes_length))
 
         assert user_balance >= (
             total := asset_price * quantity + mbr_per_unit * quantity
@@ -132,7 +132,7 @@ class Game(ARC4Contract):
         asset_price = self.asset[asset_id].price.native
 
         asset_bytes_length = self.asset[asset_id].bytes.length + asset_id.length
-        mbr_per_unit = 2_500 + (400 * (8 + asset_bytes_length))
+        mbr_per_unit = 2_500 + (400 * (asset_bytes_length))
 
         user_asset_id = op.sha256(Txn.sender.bytes + asset_id)
         assert user_asset_id in self.user_asset, "No assets found"
