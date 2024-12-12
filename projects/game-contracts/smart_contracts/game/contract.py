@@ -4,6 +4,7 @@ from algopy import (
     Account,
     ARC4Contract,
     BoxMap,
+    Box,
     Bytes,
     Global,
     Txn,
@@ -12,6 +13,7 @@ from algopy import (
     gtxn,
     op,
 )
+
 
 Hash: TypeAlias = Bytes
 Quantity: TypeAlias = UInt64
@@ -34,7 +36,8 @@ class Game(ARC4Contract):
         self.user = BoxMap(Account, User)
         self.asset = BoxMap(Hash, GameAsset)
         self.user_asset = BoxMap(Hash, Quantity)
-        self.nft_assets = BoxMap(Hash, GameAsset)
+        self.user_asa = BoxMap(Hash, Quantity)
+        self.asa_id = Box(Hash, key=b"a")
 
     @arc4.abimethod
     def register(self, name: arc4.String) -> User:
@@ -149,3 +152,30 @@ class Game(ARC4Contract):
         self.user[Txn.sender].balance = arc4.UInt64(
             user_balance + (asset_price * quantity) + mbr_per_unit
         )
+
+    @arc4.abimethod
+    def set_asa_id(self, asa_id: Hash) -> None:
+        """Sets the ASA ID for the game currency."""
+        if not self.asa_id:
+            self.asa_id.value = asa_id
+        else:
+            assert self.asa_id.value == asa_id, "ASA ID mismatch"
+
+    @arc4.abimethod
+    def distribute_asa(self, quantity: Quantity) -> None:
+        """Updates or inserts an ASA.
+
+        Args:
+            quantity (Quantity): The quantity to distribute.
+        """
+        assert self.asa_id, "ASA ID not set"
+        assert (
+            Txn.sender == Global.creator_address
+        ), "Only the creator can call this method"
+        assert Txn.receiver in self.user, "Receiver must be registered"
+
+        user_asa_id = op.sha256(Txn.receiver.bytes + op.sha256(self.asa_id.value))
+        if user_asa_id in self.user_asset:
+            self.user_asset[user_asa_id] += quantity
+        else:
+            self.user_asset[user_asa_id] = quantity

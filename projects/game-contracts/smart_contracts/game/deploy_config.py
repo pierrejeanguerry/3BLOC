@@ -18,15 +18,10 @@ def deploy(
         GameClient,
     )
 
-    asset_fee = 1
-    box_fee = 100
-
     game_client = GameClient(
         algod_client,
         creator=deployer,
         indexer_client=indexer_client,
-        newasset_fee=asset_fee,
-        newbox_fee=box_fee,
     )
 
     game_client.deploy(
