@@ -179,3 +179,49 @@ class Game(ARC4Contract):
             self.user_asset[user_asa_id] += quantity
         else:
             self.user_asset[user_asa_id] = quantity
+
+    @arc4.abimethod
+    def register_nft(
+        self, nft_id: Hash, name: arc4.String, description: arc4.String
+    ) -> None:
+        """Registers a new NFT in the contract.
+
+        Args:
+            nft_id (Hash): The ASA ID representing the NFT.
+            name (arc4.String): The name of the NFT.
+            description (arc4.String): A description of the NFT.
+        """
+        assert not self.asset[nft_id], "NFT already registered"
+        self.asset[nft_id] = GameAsset(
+            name=name, description=description, price=arc4.UInt64(0)
+        )
+
+    @arc4.abimethod
+    def assign_nft(self, nft_id: Hash, receiver: Account) -> None:
+        """Assigns an NFT to a user.
+
+        Args:
+            nft_id (Hash): The ASA ID of the NFT.
+            receiver (Account): The user's account.
+        """
+        assert self.asset[nft_id], "NFT not registered"
+        assert Txn.receiver in self.user, "Receiver must be a registered user"
+
+        user_nft_id = op.sha256(Txn.receiver.bytes + nft_id)
+        assert user_nft_id not in self.user_asset, "NFT already assigned to user"
+
+        self.user_asset[user_nft_id] = Quantity(1)
+
+    @arc4.abimethod
+    def check_nft_ownership(self, nft_id: Hash, user: Account) -> arc4.Bool:
+        """Checks if a user owns a specific NFT.
+
+        Args:
+            nft_id (Hash): The ASA ID of the NFT.
+            user (Account): The user's account.
+
+        Returns:
+            arc4.Bool: True if the user owns the NFT, False otherwise.
+        """
+        user_nft_id = op.sha256(user.bytes + nft_id)
+        return arc4.Bool(user_nft_id in self.user_asset)
