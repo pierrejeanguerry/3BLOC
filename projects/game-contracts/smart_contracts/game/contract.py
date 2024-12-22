@@ -31,6 +31,15 @@ class GameAsset(arc4.Struct):
     price: arc4.UInt64
 
 
+class TradeOffer(arc4.Struct):
+    creator: Account
+    offered_asset: Hash
+    offered_quantity: Quantity
+    requested_asset: Hash
+    requested_quantity: Quantity
+    active: arc4.Bool
+
+
 class Game(ARC4Contract):
     def __init__(self) -> None:
         self.user = BoxMap(Account, User)
@@ -38,6 +47,7 @@ class Game(ARC4Contract):
         self.user_asset = BoxMap(Hash, Quantity)
         self.user_asa = BoxMap(Hash, Quantity)
         self.asa_id = Box(Hash, key=b"a")
+        self.trade_offers = BoxMap(Hash, TradeOffer)
 
     @arc4.abimethod
     def register(self, name: arc4.String) -> User:
@@ -77,6 +87,7 @@ class Game(ARC4Contract):
         )
         return self.user[payment.sender].balance
 
+    # Question 1
     @arc4.abimethod
     def buy_asset(self, asset_id: Hash, quantity: Quantity) -> None:
         """Buys a game asset.
@@ -120,6 +131,7 @@ class Game(ARC4Contract):
         ), "Only the creator can call this method"
         self.asset[op.sha256(asset.name.bytes)] = asset.copy()
 
+    # Question 2
     @arc4.abimethod
     def sellback_asset(self, asset_id: Hash, quantity: Quantity) -> None:
         """Sell back a game asset to the application.
@@ -153,6 +165,174 @@ class Game(ARC4Contract):
             user_balance + (asset_price * quantity) + mbr_per_unit
         )
 
+    # Question 3
+    @arc4.abimethod
+    def exchange_assets(
+        self,
+        sender_asset_id: Hash,
+        sender_quantity: Quantity,
+        receiver: Account,
+        receiver_asset_id: Hash,
+        receiver_quantity: Quantity,
+    ) -> None:
+        """Permet aux utilisateurs d'échanger leurs actifs.
+
+        Args:
+            sender_asset_id (Hash): ID de l'actif de l'expéditeur.
+            sender_quantity (Quantity): Quantité de l'actif de l'expéditeur.
+            receiver (Account): Compte du destinataire.
+            receiver_asset_id (Hash): ID de l'actif du destinataire.
+            receiver_quantity (Quantity): Quantité de l'actif du destinataire.
+        """
+        # Vérifications de base
+        assert Txn.sender in self.user, "L'expéditeur doit être enregistré"
+        assert Txn.receiver in self.user, "Le destinataire doit être enregistré"
+
+        sender_asset_key = op.sha256(Txn.sender.bytes + sender_asset_id)
+        receiver_asset_key = op.sha256(receiver.bytes + receiver_asset_id)
+
+        assert sender_asset_key in self.user_asset, "Sender do not own the asset"
+        assert (
+            self.user_asset[sender_asset_key] >= sender_quantity
+        ), "Quantité insuffisante pour l'expéditeur"
+
+        assert (
+            receiver_asset_key in self.user_asset
+        ), "Le destinataire ne possède pas cet actif"
+        assert (
+            self.user_asset[receiver_asset_key] >= receiver_quantity
+        ), "Quantité insuffisante pour le destinataire"
+
+        # Mise à jour des actifs
+        self.user_asset[sender_asset_key] -= sender_quantity
+        if self.user_asset[sender_asset_key] == 0:
+            del self.user_asset[sender_asset_key]
+
+        self.user_asset[receiver_asset_key] -= receiver_quantity
+        if self.user_asset[receiver_asset_key] == 0:
+            del self.user_asset[receiver_asset_key]
+
+        sender_new_asset_key = op.sha256(receiver.bytes + sender_asset_id)
+        receiver_new_asset_key = op.sha256(Txn.sender.bytes + receiver_asset_id)
+
+        if sender_new_asset_key in self.user_asset:
+            self.user_asset[sender_new_asset_key] += sender_quantity
+        else:
+            self.user_asset[sender_new_asset_key] = sender_quantity
+
+        if receiver_new_asset_key in self.user_asset:
+            self.user_asset[receiver_new_asset_key] += receiver_quantity
+        else:
+            self.user_asset[receiver_new_asset_key] = receiver_quantity
+
+    @arc4.abimethod
+    def create_trade_offer(
+        offered_asset: Hash,
+        offered_quantity: Quantity,
+        requested_asset: Hash,
+        requested_quantity: Quantity,
+    ) -> Hash:
+        """Crée une offre d'échange.
+
+        Args:
+            offered_asset (Hash): L'actif proposé.
+            offered_quantity (Quantity): La quantité proposée.
+            requested_asset (Hash): L'actif demandé.
+            requested_quantity (Quantity): La quantité demandée.
+
+        Returns:
+            Hash: L'ID de l'offre créée.
+        """
+        assert Txn.sender in self.user, "L'utilisateur doit être enregistré"
+
+        offer_key = op.sha256(Txn.sender.bytes + Global.latest_timestamp.bytes)
+        sender_asset_key = op.sha256(Txn.sender.bytes + offered_asset)
+
+        assert sender_asset_key in self.user_asset, "Vous ne possédez pas cet actif"
+        assert (
+            self.user_asset[sender_asset_key] >= offered_quantity
+        ), "Quantité insuffisante pour proposer l'offre"
+
+        # Geler les actifs offerts dans l'offre
+        self.user_asset[sender_asset_key] -= offered_quantity
+
+        self.trade_offers[offer_key] = TradeOffer(
+            creator=Txn.sender,
+            offered_asset=offered_asset,
+            offered_quantity=offered_quantity,
+            requested_asset=requested_asset,
+            requested_quantity=requested_quantity,
+            active=arc4.Bool(True),
+        )
+
+        return offer_key
+
+    @arc4.abimethod
+    def accept_trade_offer(offer_id: Hash) -> None:
+        """Accepte une offre d'échange.
+
+        Args:
+            offer_id (Hash): L'ID de l'offre à accepter.
+        """
+        assert Txn.sender in self.user, "L'utilisateur doit être enregistré"
+        assert offer_id in self.trade_offers, "Offre invalide"
+
+        offer = self.trade_offers[offer_id]
+        assert offer.active, "Offre déjà acceptée ou annulée"
+
+        receiver_asset_key = op.sha256(Txn.sender.bytes + offer.requested_asset)
+        creator_asset_key = op.sha256(offer.creator.bytes + offer.offered_asset)
+
+        assert (
+            receiver_asset_key in self.user_asset
+        ), "Vous ne possédez pas l'actif demandé"
+        assert (
+            self.user_asset[receiver_asset_key] >= offer.requested_quantity
+        ), "Quantité insuffisante pour accepter l'offre"
+
+        # Échange des actifs
+        self.user_asset[receiver_asset_key] -= offer.requested_quantity
+        self.user_asset[creator_asset_key] += offer.requested_quantity
+
+        if creator_asset_key in self.user_asset:
+            self.user_asset[creator_asset_key] += offer.offered_quantity
+        else:
+            self.user_asset[creator_asset_key] = offer.offered_quantity
+
+        if receiver_asset_key in self.user_asset:
+            self.user_asset[receiver_asset_key] += offer.requested_quantity
+        else:
+            self.user_asset[receiver_asset_key] = offer.requested_quantity
+
+        # Désactiver l'offre
+        offer.active = arc4.Bool(False)
+        self.trade_offers[offer_id] = offer
+
+    @arc4.abimethod
+    def cancel_trade_offer(offer_id: Hash) -> None:
+        """Annule une offre d'échange.
+
+        Args:
+            offer_id (Hash): L'ID de l'offre à annuler.
+        """
+        assert Txn.sender in self.user, "L'utilisateur doit être enregistré"
+        assert offer_id in self.trade_offers, "Offre invalide"
+
+        offer = self.trade_offers[offer_id]
+        assert (
+            offer.creator == Txn.sender
+        ), "Vous ne pouvez annuler que vos propres offres"
+        assert offer.active, "Offre déjà désactivée"
+
+        # Rendre les actifs gelés
+        creator_asset_key = op.sha256(offer.creator.bytes + offer.offered_asset)
+        self.user_asset[creator_asset_key] += offer.offered_quantity
+
+        # Désactiver l'offre
+        offer.active = arc4.Bool(False)
+        self.trade_offers[offer_id] = offer
+
+    # Question 4
     @arc4.abimethod
     def set_asa_id(self, asa_id: Hash) -> None:
         """Sets the ASA ID for the game currency."""
@@ -180,6 +360,7 @@ class Game(ARC4Contract):
         else:
             self.user_asset[user_asa_id] = quantity
 
+    # Question 5
     @arc4.abimethod
     def register_nft(
         self, nft_id: Hash, name: arc4.String, description: arc4.String
