@@ -24,8 +24,6 @@ from algosdk.v2client.indexer import IndexerClient
 
 from smart_contracts.artifacts.game.game_client import GameClient
 
-from create_ASA import create_asa
-
 
 @pytest.fixture(scope="session")
 def account(algod_client: AlgodClient) -> Account:
@@ -358,17 +356,3 @@ def test_sellback_asset(
     assert balance_after == balance_before + expected_refund
     # Assert quantité d'asset mis à jour
     assert quantity_after == quantity_before - 1
-
-
-def test_set_asa_id(
-    algod_client: AlgodClient, app_client: GameClient, account: Account
-) -> None:
-    app_client.signer = AccountTransactionSigner(account.private_key)
-
-    created_asa = create_asa(algod_client, account)
-
-    # asa_id = sha256(str(created_asa).encode("utf-8")).digest()
-    asa_id = sha256(abi.StringType().encode(str(created_asa))).digest()
-    app_client.set_asa_id(
-        asa_id=asa_id,
-    )
