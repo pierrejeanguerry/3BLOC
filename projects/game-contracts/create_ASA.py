@@ -52,4 +52,3 @@ print(f"Result confirmed in round: {results['confirmed-round']}")
 # grab the asset id for the asset we just created
 created_asset = results["asset-index"]
 print(f"Asset ID created: {created_asset}")
-return created_asset
